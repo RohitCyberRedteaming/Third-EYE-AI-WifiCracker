@@ -1,0 +1,5 @@
+captures/
+thirdeye_scan*
+__pycache__/
+*.csv
+*.cap
