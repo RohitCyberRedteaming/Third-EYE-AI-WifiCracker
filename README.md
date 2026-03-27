@@ -14,7 +14,7 @@
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/YOUR_USERNAME/ThirdEye-Wifi-Cracker.git](https://github.com/YOUR_USERNAME/ThirdEye-Wifi-Cracker.git)
+git clone [https://github.com/YOUR_USERNAME/ThirdEye-Wifi-Cracker.git](https://github.com/YOUR_USERNAME/ThirdEye-AI-WifiCracker.git)
 cd ThirdEye-Wifi-Cracker
 
 2- Run Setup Script
