@@ -64,3 +64,34 @@ GitHub par faltu files (jaise scan results ya captured passwords) upload nahi ho
 __pycache__/
 captures/
 scan*
+===================================================================================================================================================================
+===================================================================================================================================================================
+📱 2. Mobile APK / Termux Process (Step-by-Step)
+Android par ise chalane ke liye koi .apk file nahi banti, balki Termux ka use hota hai. Kyunki ye tool hardware access karta hai, aapka phone ROOTED hona chahiye aur aapke paas ek External WiFi Adapter (jo monitor mode support kare) hona chahiye.
+
+Step 1: Install Termux
+Play Store wala Termux purana hai, F-Droid website se latest Termux download karein.
+
+Step 2: Setup Root Environment
+Termux open karein aur ye commands dalein:
+
+Bash
+pkg update && pkg upgrade -y
+pkg install tsu python git -y
+Step 3: Setup Dependencies (Termux specific)
+Kyunki Termux mein apt ki jagah pkg hota hai, aapka setup.sh thoda alag hoga:
+
+Bash
+pkg install aircrack-ng reaver pixiewps bully tshark -y
+pip install pandas tabulate colorama
+Step 4: Connect WiFi Adapter
+Apne external WiFi card ko OTG cable se connect karein. Termux mein type karein:
+
+Bash
+lsusb
+Agar aapka card list mein dikh raha hai, toh aap ready hain.
+
+Step 5: Run ThirdEye
+Bash
+tsu  # Root access switch karein
+python main.py
